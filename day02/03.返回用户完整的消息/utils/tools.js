@@ -15,7 +15,7 @@ module.exports = {
           resolve(result);
         })
     })
-
+    
   },
   parseXMLDataAsync (xmlData) {
     return new Promise((resolve, reject) => {
@@ -38,7 +38,7 @@ module.exports = {
 
       result[key] = value[0];
     }
-
+    
     return result;
   }
 }
