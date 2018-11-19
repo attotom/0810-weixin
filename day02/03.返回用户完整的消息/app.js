@@ -2,6 +2,7 @@ const express = require('express');
 const sha1 = require('sha1');
 
 const {getUserDataAsync, parseXMLDataAsync, formatMessage} = require('./utils/tools');
+const reply = require('./reply/reply');
 const template = require('./reply/template');
 
 const app = express();
@@ -14,74 +15,50 @@ const config = {
 
 app.use(async (req, res, next) => {
   console.log(req.query);
-
+  //获取请求参数
   const {signature, echostr, timestamp, nonce} = req.query;
   const {token} = config;
   const str = sha1([timestamp, nonce, token].sort().join(''));
 
   if (req.method === 'GET') {
-
+    // 验证服务器有效性逻辑
     if (signature === str) {
-
+      //说明消息来自于微信服务器
       res.end(echostr);
     } else {
-
+      //说明消息不来自于微信服务器
       res.end('error');
     }
   } else if (req.method === 'POST') {
-
+    // 转发用户消息
+    //接受微信服务器转发用户消息
+    //验证消息来自于微信服务器
     if (signature !== str) {
       res.end('error');
       return;
     }
-
+    //用户发送的消息在请求体
     const xmlData = await getUserDataAsync(req);
     console.log(xmlData);
 
+    //将用户发送过来的xml数据解析为js对象
     const jsData = await parseXMLDataAsync(xmlData);
     console.log(jsData);
-
+    //格式化数据
     const message = formatMessage(jsData);
     console.log(message);
 
-    let options = {
-      toUserName: message.FromUserName,
-      fromUserName: message.ToUserName,
-      createTime: Date.now(),
-      msgType: 'text'
-    }
-    
+    const options = reply(message);
 
-    let content = '你在说什么，我听不懂~';
-    
-
-    if (message.Content === '1') {
-      content = '大吉大利，今晚吃鸡';
-    } else if (message.Content === '2') {
-      content = '落地成盒';
-    } else if (message.Content.includes('爱')) {
-      content = '我爱你~';
-    } else if (message.Content === '3') {
-
-      options.msgType = 'news';
-      options.title = '游戏攻略~';
-      options.description = 'weixin0810~';
-      options.picUrl = 'https://ss3.bdstatic.com/70cFv8Sh_Q1YnxGkpoWK1HF6hhy/it/u=821105795,3802172768&fm=27&gp=0.jpg';
-      options.url = 'http://yys.163.com/';
-    }
-  
-    options.content = content;
-  
     const replyMessage = template(options);
     console.log(replyMessage);
-    
 
     res.send(replyMessage);
-    
+
   } else {
     res.end('error');
   }
-  
+
 })
 
 
